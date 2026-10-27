@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikisource Workspace - v20 (Collapsible Tools)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* --- Core Design Tokens --- */
+        :root {
+            --brand-blue: #3366cc;
+            --brand-hover: #2a55af;
+            --brand-light: #eaf3ff;
+            
+            --bg-canvas: #e8eaed; 
+            --surface-white: #ffffff;
+            --surface-hover: #f8f9fa;
+            
+            --border-main: #a2a9b1; 
+            --border-light: #c8ccd1;
+            
+            --text-dark: #202122;
+            --text-base: #54595d;
+            --text-muted: #72777d;
+            
+            /* Status Colors */
+            --color-np: #d97706;      
+            --color-np-bg: #fef3c7;
+            --color-prob: #dc2626;    
+            --color-prob-bg: #fee2e2;
+            --color-proof: #14866d;   
+            --color-proof-bg: #e6f5f1;
+            --color-val: #2563eb;     
+            --color-val-bg: #eff6ff;
+            
+            --font-ui: 'Inter', sans-serif;
+            --font-book: 'Noto Serif Bengali', serif;
+            --font-mono: 'Fira Code', monospace;
+            
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 20px rgba(0,0,0,0.12);
+            
+            --radius-md: 6px;
+            --radius-lg: 8px;
+
+            /* Editor Variables */
+            --editor-font-size: 19px;
+            --workspace-max-width: 100%;
+        }
+
+        [data-theme="dark"] {
+            --brand-blue: #6699ff;
+            --brand-hover: #88bbff;
+            --brand-light: #1a2b4c;
+            --bg-canvas: #121212;
+            --surface-white: #1e1e1e;
+            --surface-hover: #2d2d2d;
+            
+            --border-main: #444;
+            --border-light: #333;
+            
+            --text-dark: #e0e0e0;
+            --text-base: #b0b0b0;
+            --text-muted: #888;
+            
+            --color-np-bg: #451a03;
+            --color-prob-bg: #450a0a;
+            --color-proof-bg: #064e3b;
+            --color-val-bg: #172554;
+            
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.5);
+            --shadow-lg: 0 10px 20px rgba(0,0,0,0.6);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-canvas);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 13px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Top Header */
+        .top-header {
+            background: var(--surface-white);
+            border-bottom: 1px solid var(--border-main);
+            height: 56px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 24px;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+            z-index: 100;
+        }
+        .logo-group { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; color: var(--text-dark); text-decoration: none; }
+        
+        .book-selector { position: relative; }
+        .book-btn { display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid transparent; padding: 6px 12px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; color: var(--text-dark); cursor: pointer; }
+        .book-btn:hover { background: var(--bg-canvas); border-color: var(--border-light); }
+        
+        .pagination-group { display: flex; align-items: center; background: var(--bg-canvas); border: 1px solid var(--border-main); border-radius: 20px; padding: 2px; position: relative; }
+        .nav-arrow { background: transparent; border: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-base); }
+        .nav-arrow:hover { background: var(--surface-white); color: var(--brand-blue); box-shadow: var(--shadow-sm); }
+        .page-jump-btn { background: var(--surface-white); border: 1px solid var(--border-main); border-radius: 12px; padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--text-base); cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0 4px; }
+        
+        .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+        .icon-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .icon-btn:hover { background: var(--bg-canvas); color: var(--text-dark); }
+        
+        /* User Profile Dropdown */
+        .user-menu-container { position: relative; }
+        .user-profile { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; padding: 4px 8px; border-radius: var(--radius-md); transition: background 0.2s; }
+        .user-profile:hover { background: var(--bg-canvas); }
+        
+        .avatar { 
+            width: 28px; 
+            height: 28px; 
+            background: var(--brand-blue); 
+            color: white; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 600; 
+            font-size: 14px; 
+        }
+        [data-theme="dark"] .avatar { background: var(--brand-light); color: var(--brand-blue); }
+        
+        .user-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface-white); border: 1px solid var(--border-main); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 8px; min-width: 220px; display: none; z-index: 1000; }
+        .user-dropdown.active { display: block; }
+        .user-dropdown-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; color: var(--brand-blue); font-size: 14px; text-decoration: none; border-radius: 4px; cursor: pointer; }
+        .user-dropdown-item:hover { background: var(--bg-canvas); }
+        .user-dropdown-item svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* Dropdowns */
+        .dropdown-menu { position: absolute; top: calc(100% + 8px); left: 0; background: var(--surface-white); border: 1px solid var(--border-main); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 8px; min-width: 250px; display: none; z-index: 1000; }
+        .dropdown-menu.active { display: block; }
+        .dropdown-menu input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-main); border-radius: 4px; font-size: 13px; margin-bottom: 8px; outline: none; background: var(--bg-canvas); color: var(--text-dark); }
+        .dropdown-menu input:focus { border-color: var(--brand-blue); }
+        .dropdown-item { padding: 8px 12px; border-radius: 4px; cursor: pointer; color: var(--text-dark); font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-item:hover { background: var(--bg-canvas); color: var(--brand-blue); }
+        
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .dot-np { background: var(--color-np); }
+        .dot-prob { background: var(--color-prob); }
+        .dot-proof { background: var(--color-proof); }
+        .dot-val { background: var(--color-val); }
+
+        /* Main Layout */
+        .main-layout { display: flex; flex: 1; padding: 16px; gap: 16px; min-height: 0; transition: all 0.3s ease; }
+        .center-column { flex: 1; display: flex; flex-direction: column; gap: 16px; min-width: 0; width: 100%; max-width: var(--workspace-max-width); margin: 0 auto; transition: max-width 0.3s ease; }
+
+        /* Stepper */
+        .stepper-container { display: flex; align-items: center; justify-content: space-between; }
+        .stepper { display: flex; background: var(--surface-white); border: 1px solid var(--border-main); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+        .step { padding: 10px 24px; font-weight: 500; color: var(--text-base); cursor: pointer; border-right: 1px solid var(--border-light); transition: all 0.2s; }
+        .step:last-child { border-right: none; }
+        .step.active { background: var(--brand-blue); color: white; font-weight: 600; }
+        .step:hover:not(.active) { background: var(--bg-canvas); }
+        
+        .quick-actions { display: flex; align-items: center; gap: 12px; position: relative; }
+        
+        /* Status Badge */
+        .status-badge { 
+            background: var(--color-proof-bg); 
+            border: 1px solid var(--color-proof); 
+            border-radius: var(--radius-lg); 
+            padding: 8px 16px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px; 
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 140px;
+        }
+        .status-badge span:first-child { font-size: 11px; color: var(--text-base); }
+        .status-badge span:last-child { color: var(--color-proof); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        
+        #status-menu { width: 240px; left: auto; right: 0; }
+        #status-menu .dropdown-item { font-weight: 500; }
+        #status-menu .disabled { opacity: 0.5; cursor: not-allowed; background: var(--bg-canvas); }
+        #status-menu .disabled:hover { color: var(--text-dark); }
+
+        .btn-primary { background: var(--brand-blue); color: white; border: none; padding: 10px 24px; border-radius: var(--radius-lg); font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-sm); }
+        .btn-primary:hover { background: var(--brand-hover); box-shadow: var(--shadow-md); }
+
+        /* Split Panes */
+        .split-panes { display: flex; gap: 16px; flex: 1; min-height: 0; }
+        .pane { flex: 1; background: var(--surface-white); border: 1px solid var(--border-main); border-radius: var(--radius-lg); display: flex; flex-direction: column; box-shadow: var(--shadow-sm); min-width: 0; overflow: hidden; position: relative; }
+        .pane-header { padding: 12px 16px; border-bottom: 1px solid var(--border-main); display: flex; justify-content: space-between; align-items: center; font-weight: 600; flex-shrink: 0; background: var(--surface-hover); }
+        
+        /* Scan Pane & Controls */
+        .scan-viewport { flex: 1; background: var(--bg-canvas); padding: 24px; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative; }
+        .actual-scan-image { max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid var(--border-main); background: white; transition: filter 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 1; }
+        [data-theme="dark"] .actual-scan-image { filter: brightness(0.85); }
+        
+        /* Floating Scan Controls (Frosted Glass) */
+        .scan-controls { 
+            position: absolute; 
+            bottom: 24px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border-main); 
+            border-radius: 20px; 
+            display: flex; 
+            gap: 4px; 
+            padding: 6px 12px; 
+            box-shadow: var(--shadow-lg);
+            z-index: 10;
+        }
+        [data-theme="dark"] .scan-controls {
+            background: rgba(30, 30, 30, 0.85);
+        }
+        .scan-btn { background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 50%; color: var(--text-base); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .scan-btn:hover { background: var(--bg-canvas); color: var(--brand-blue); }
+        .scan-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+        /* Toolbar */
+        .editor-toolbar { padding: 6px 12px; border-bottom: 1px solid var(--border-main); display: flex; align-items: center; gap: 4px; background: var(--surface-white); flex-wrap: wrap; flex-shrink: 0; }
+        .tool-group { display: flex; align-items: center; gap: 2px; padding-right: 8px; border-right: 1px solid var(--border-light); margin-right: 8px; }
+        .tool-group:last-child { border-right: none; }
+        .tool-btn { background: transparent; border: 1px solid transparent; padding: 6px 8px; font-size: 14px; color: var(--text-base); cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; }
+        .tool-btn:hover { background: var(--bg-canvas); }
+        .tool-btn.active { background: var(--brand-light); color: var(--brand-blue); border-color: var(--brand-blue); }
+        
+        .btn-ocr { background: var(--brand-light); color: var(--brand-blue); border: 1px solid var(--brand-blue); padding: 6px 16px; border-radius: var(--radius-lg); font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .btn-ocr:hover { background: var(--brand-blue); color: white; }
+        .btn-ocr svg { fill: currentColor; }
+        
+        .tool-dropdown { position: relative; }
+        .tool-dropdown-btn { background: transparent; border: 1px solid transparent; padding: 6px 10px; font-size: 12px; font-weight: 500; color: var(--text-base); cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 4px; height: 30px; }
+        .tool-dropdown-btn:hover, .tool-dropdown-btn.active { background: var(--bg-canvas); }
+        .tool-dropdown-menu { position: absolute; top: calc(100% + 4px); left: 0; background: var(--surface-white); border: 1px solid var(--border-main); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: 6px; min-width: 200px; display: none; z-index: 50; }
+        .tool-dropdown-menu.active { display: block; }
+
+        /* Sectioned Editor */
+        .editor-container { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; background: var(--surface-white); }
+        .editor-section { display: flex; flex-direction: column; position: relative; }
+        .editor-section.header-section { border-bottom: 2px solid var(--border-main); }
+        .editor-section.footer-section { border-top: 2px solid var(--border-main); }
+        .editor-section.body-section { flex: 1; min-height: 0; }
+        
+        .section-label { position: absolute; top: 8px; right: 16px; font-family: var(--font-ui); font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; z-index: 10; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--surface-hover); }
+        ::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 5px; border: 2px solid var(--surface-hover); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        .highlight-container { position: relative; display: flex; flex: 1; min-height: 0; overflow: hidden; }
+        .line-numbers { width: 40px; background: var(--surface-hover); border-right: 1px solid var(--border-main); padding: 12px 8px 12px 0; text-align: right; font-family: var(--font-mono); font-size: 14px; line-height: 1.8; color: var(--text-muted); user-select: none; overflow: hidden; }
+        
+        .highlight-layer, .editor-textarea { 
+            position: absolute; top: 0; left: 40px; right: 0; bottom: 0; 
+            padding: 12px 16px; 
+            font-family: var(--font-book); 
+            font-size: var(--editor-font-size); 
+            line-height: 1.8; 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            margin: 0; 
+            border: none; 
+            overflow-y: auto; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .highlight-layer { pointer-events: none; color: transparent; }
+        .editor-textarea { background: transparent; color: transparent; caret-color: var(--text-dark); resize: none; outline: none; }
+        [data-theme="dark"] .editor-textarea { caret-color: #e0e0e0; }
+
+        .syntax-text { color: var(--text-dark); }
+        [data-theme="dark"] .syntax-text { color: #e0e0e0; }
+        .syntax-template { color: #9333ea; font-weight: 500; }
+        .syntax-link { color: #2563eb; font-weight: 500; }
+        .syntax-tag { color: #dc2626; font-weight: 500; }
+        [data-theme="dark"] .syntax-template { color: #c084fc; }
+        [data-theme="dark"] .syntax-link { color: #60a5fa; }
+        [data-theme="dark"] .syntax-tag { color: #f87171; }
+
+        /* Bottom Action Bar */
+        .bottom-action-bar { border-top: 1px solid var(--border-main); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--surface-hover); flex-shrink: 0; }
+        .saved-status { display: flex; align-items: flex-start; gap: 8px; color: var(--color-proof); font-size: 13px; font-weight: 500; }
+        .saved-status-icon { background: var(--color-proof-bg); border-radius: 50%; padding: 4px; }
+        .saved-status-text { display: flex; flex-direction: column; gap: 2px; }
+        .saved-status-text span { color: var(--text-muted); font-size: 11px; font-weight: 400; }
+        .btn-secondary { background: var(--surface-white); border: 1px solid var(--border-main); color: var(--text-dark); padding: 8px 16px; border-radius: var(--radius-md); font-weight: 500; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .btn-secondary:hover { background: var(--bg-canvas); }
+        
+        /* Expert Validator Mode */
+        .verify-mode .approve-bar { display: flex; }
+        .verify-mode .normal-action-bar { display: none; }
+        .approve-bar { display: none; background: var(--color-val-bg); border-top: 1px solid var(--color-val); padding: 12px 16px; justify-content: space-between; align-items: center; }
+        .btn-success { background: var(--color-val); color: white; border: none; padding: 10px 24px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; }
+        .btn-success:hover { filter: brightness(1.1); }
+
+        /* =========================================
+           SIDEBAR WITH COLLAPSIBLE ACCORDIONS
+           ========================================= */
+        .sidebar { width: 280px; background: var(--surface-white); border: 1px solid var(--border-main); border-radius: var(--radius-lg); display: flex; flex-direction: column; flex-shrink: 0; box-shadow: var(--shadow-sm); overflow-y: auto; }
+        
+        .sidebar-main-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid var(--border-main); background: var(--surface-hover); font-weight: 700; font-size: 15px; color: var(--text-dark); }
+        .hide-badge { background: var(--bg-canvas); color: var(--text-muted); padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-light); }
+        
+        /* Accordion Mechanics */
+        .accordion-item { border-bottom: 1px solid var(--border-light); }
+        .accordion-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none; transition: background 0.2s; }
+        .accordion-header:hover { background: var(--surface-hover); }
+        .accordion-header svg { transition: transform 0.2s; fill: var(--text-muted); }
+        .accordion-item.closed .accordion-header svg { transform: rotate(-90deg); }
+        
+        .accordion-content { padding: 0 0 12px 0; display: block; }
+        .accordion-item.closed .accordion-content { display: none; }
+        
+        .sidebar-link { display: block; padding: 6px 16px; color: var(--brand-blue); text-decoration: none; font-size: 13px; cursor: pointer; }
+        .sidebar-link:hover { text-decoration: underline; }
+        .sidebar-link.bn { font-family: var(--font-book); font-size: 15px; }
+
+        /* Appearance Controls */
+        .appearance-group { padding: 8px 16px 16px; }
+        .appearance-label { font-size: 13px; font-weight: 600; color: var(--text-dark); margin-bottom: 8px; display: block; }
+        .slider-container { display: flex; align-items: center; gap: 12px; }
+        .slider-container span { font-size: 12px; color: var(--text-muted); }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; height: 6px; }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: var(--border-light); border-radius: 3px; }
+        input[type=range]::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--brand-blue); cursor: pointer; -webkit-appearance: none; margin-top: -5px; box-shadow: var(--shadow-sm); border: 2px solid var(--surface-white); }
+        input[type=range]::-moz-range-track { width: 100%; height: 6px; cursor: pointer; background: var(--border-light); border-radius: 3px; }
+        input[type=range]::-moz-range-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--brand-blue); cursor: pointer; border: 2px solid var(--surface-white); box-shadow: var(--shadow-sm); }
+
+        .segmented-control { display: flex; background: var(--bg-canvas); border: 1px solid var(--border-main); border-radius: var(--radius-md); padding: 2px; }
+        .segmented-control label { flex: 1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 500; color: var(--text-base); cursor: pointer; border-radius: 4px; transition: all 0.2s; }
+        .segmented-control input[type="radio"] { display: none; }
+        .segmented-control input[type="radio"]:checked + label { background: var(--surface-white); color: var(--brand-blue); box-shadow: var(--shadow-sm); font-weight: 600; }
+        
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; }
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-switch { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-main); transition: .4s; border-radius: 20px; }
+        .slider-switch:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider-switch { background-color: var(--brand-blue); }
+        input:checked + .slider-switch:before { transform: translateX(16px); }
+
+        /* Save Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--surface-white); border: 1px solid var(--border-main); border-radius: var(--radius-lg); width: 500px; max-width: 90%; box-shadow: var(--shadow-lg); overflow: hidden; animation: slideUp 0.2s ease-out; }
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border-main); display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 16px; }
+        .modal-body { padding: 24px; }
+        .modal-body label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--text-base); }
+        .modal-body input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--border-main); border-radius: var(--radius-md); font-size: 14px; margin-bottom: 16px; outline: none; background: var(--bg-canvas); color: var(--text-dark); }
+        .modal-body input[type="text"]:focus { border-color: var(--brand-blue); }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border-light); display: flex; justify-content: flex-end; gap: 12px; background: var(--surface-hover); }
+
+        /* Mobile */
+        @media (max-width: 1024px) {
+            .main-layout { flex-direction: column; overflow-y: auto; }
+            .sidebar { width: 100%; height: auto; margin-top: 16px; overflow-y: visible; }
+            .split-panes { flex-direction: column; height: auto; }
+            .pane { flex: none; height: 600px; }
+            .body-section { min-height: 300px; }
+        }
+    </style>
+</head>
+<body data-theme="light" class="proofread-mode">
+
+    <header class="top-header">
+        <a href="#" class="logo-group">
+            <svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#3366cc"/><text x="50" y="68" font-size="50" fill="white" text-anchor="middle" font-family="serif">W</text></svg>
+            উইকিসংকলন
+        </a>
+        
+        <div class="book-selector">
+            <button class="book-btn" onclick="toggleDropdown('book-menu')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--brand-blue)"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+                আধুনিক রবিনহুড - হেমেন্দ্রকুমার রায় (১৯৪৪)
+                <span style="font-size:10px; color:var(--text-muted);">▼</span>
+            </button>
+            <div class="dropdown-menu" id="book-menu" style="width: 300px;">
+                <div class="dropdown-item" style="font-weight:600; color:var(--brand-blue);">আধুনিক রবিনহুড (মূল পাতা)</div>
+                <div class="dropdown-item">অধ্যায় ১: রবিনহুডের জন্ম</div>
+                <div class="dropdown-item">অধ্যায় ২: শেরউড বন</div>
+            </div>
+        </div>
+
+        <div class="pagination-group">
+            <button class="nav-arrow" onclick="changePage(-1)">◀</button>
+            <button class="page-jump-btn" onclick="toggleDropdown('page-menu')">
+                <span id="current-page-display">Page 90/240</span> 
+                <span style="font-size:10px; color:var(--text-muted);">▼</span>
+            </button>
+            <button class="nav-arrow" onclick="changePage(1)">▶</button>
+            
+            <div class="dropdown-menu" id="page-menu" style="left: 50%; transform: translateX(-50%); width: 200px;">
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px; font-weight:600;">JUMP TO PAGE</div>
+                <input type="number" id="page-input" placeholder="Enter page number..." value="90">
+                <button class="btn-primary" style="width:100%; padding:8px; font-size:12px; border-radius:4px; margin-top:4px;" onclick="jumpToPage()">Go to page</button>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <button class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></button>
+            
+            <div class="user-menu-container">
+                <div class="user-profile" onclick="toggleDropdown('user-menu')">
+                    <div class="avatar">U</div>
+                    <span>User Name</span>
+                    <span style="font-size: 10px; color: var(--text-muted);">▼</span>
+                </div>
+                <div class="user-dropdown" id="user-menu">
+                    <a href="#" class="user-dropdown-item">
+                        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 9H7V9h10v2zm0-3H7V6h10v2z"/></svg>
+                        Talk
+                    </a>
+                    <a href="#" class="user-dropdown-item">
+                        <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                        Sandbox
+                    </a>
+                    <a href="#" class="user-dropdown-item">
+                        <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+                        Preferences
+                    </a>
+                    <a href="#" class="user-dropdown-item">
+                        <svg viewBox="0 0 24 24"><path d="M19.89,10.37l-1.9-1.1l-0.45-1.09l0.91-1.97c0.13-0.27,0.05-0.6-0.19-0.79l-1.41-1.41c-0.19-0.19-0.47-0.26-0.72-0.17 l-2.15,0.77l-1.12-0.45l-1.1-1.9C11.64,2.01,11.38,1.88,11.1,1.88h-2c-0.28,0-0.54,0.13-0.66,0.37l-1.1,1.9l-1.12,0.45 l-2.15-0.77c-0.25-0.09-0.53-0.02-0.72,0.17L1.94,5.41C1.75,5.6,1.68,5.88,1.77,6.13l0.91,1.97L2.23,9.19l-1.9,1.1 C0.1,10.41,0,10.62,0,10.84v2c0,0.22,0.1,0.43,0.27,0.55l1.9,1.1l0.45,1.09l-0.91,1.97c-0.09,0.25-0.02,0.53,0.17,0.72 l1.41,1.41c0.19,0.19,0.47,0.26,0.72,0.17l2.15-0.77l1.12,0.45l1.1,1.9c0.12,0.24,0.38,0.37,0.66,0.37h2 c0.28,0,0.54-0.13,0.66-0.37l1.1-1.9l1.12-0.45l2.15,0.77c0.25,0.09,0.53,0.02,0.72-0.17l1.41-1.41 c0.19-0.19,0.26-0.47,0.17-0.72l-0.91-1.97l0.45-1.09l1.9-1.1c0.17-0.12,0.27-0.33,0.27-0.55v-2 C20,10.62,19.9,10.41,19.89,10.37z M10,14.5c-2.49,0-4.5-2.01-4.5-4.5S7.51,5.5,10,5.5s4.5,2.01,4.5,4.5S12.49,14.5,10,14.5z"/></svg>
+                        Beta
+                    </a>
+                    <a href="#" class="user-dropdown-item">
+                        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        Contributions
+                    </a>
+                    <a href="#" class="user-dropdown-item" style="border-top: 1px solid var(--border-light); margin-top: 4px; padding-top: 12px; border-radius: 0 0 4px 4px;">
+                        <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                        Log out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <div class="center-column">
+            
+            <div class="stepper-container">
+                <div class="stepper">
+                    <div class="step active" id="step-1" onclick="switchStep(1)">1. Proofread</div>
+                    <div class="step" id="step-2" onclick="switchStep(2)">2. Verify (Expert)</div>
+                    <div class="step" id="step-3" onclick="switchStep(3)">3. Save</div>
+                </div>
+                <div class="quick-actions">
+                    
+                    <div class="status-badge" id="main-status-badge" onclick="toggleDropdown('status-menu')">
+                        <span>Page status ▼</span>
+                        <span id="status-text"><span class="dot dot-proof"></span> <span style="color:var(--color-proof)">Proofread</span></span>
+                    </div>
+                    
+                    <div class="dropdown-menu" id="status-menu">
+                        <div style="font-size:11px; color:var(--text-muted); padding: 4px 12px 8px; font-weight:600;">SET PAGE STATUS</div>
+                        
+                        <div class="dropdown-item" onclick="setStatus('np')">
+                            <span><span class="dot dot-np"></span> Not Proofread</span>
+                        </div>
+                        <div class="dropdown-item" onclick="setStatus('prob')">
+                            <span><span class="dot dot-prob"></span> Problematic</span>
+                        </div>
+                        <div class="dropdown-item" onclick="setStatus('proof')">
+                            <span><span class="dot dot-proof"></span> Proofread</span>
+                        </div>
+                        
+                        <div class="dropdown-item disabled" title="Only a different user can validate this page.">
+                            <span><span class="dot dot-val"></span> Validated 🔒</span>
+                        </div>
+                        <div style="font-size:10px; color:var(--text-muted); padding: 8px 12px 4px; border-top: 1px solid var(--border-light); margin-top: 4px; line-height: 1.4;">
+                            You cannot validate your own work. An expert must review it.
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" onclick="openSaveModal()">Save page</button>
+                </div>
+            </div>
+
+            <div class="split-panes">
+                <div class="pane">
+                    <div class="pane-header">Original scan</div>
+                    <div class="scan-viewport">
+                        <img class="actual-scan-image" src="Page90.jpg" alt="Page 90 Scan" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'color:red; text-align:center;\'>⚠️ Image not found.<br>Ensure Page90.jpg is in this folder.</div>';">
+                        
+                        <div class="scan-controls">
+                            <button class="scan-btn" title="Zoom In">
+                                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                            </button>
+                            <button class="scan-btn" title="Zoom Out">
+                                <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                            </button>
+                            <button class="scan-btn" title="Fit to Screen">
+                                <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                            </button>
+                            <button class="scan-btn" title="Rotate">
+                                <svg viewBox="0 0 24 24"><path d="M15.55 5.55L11 1v3.07C7.06 4.56 4 7.92 4 12s3.05 7.44 7 7.93v-2.02c-2.84-.48-5-2.94-5-5.91s2.16-5.43 5-5.91V10l4.55-4.45zM19.93 11c-.17-1.39-.72-2.73-1.62-3.89l-1.42 1.42c.54.75.88 1.6 1.02 2.47h2.02zM13 17.9v2.02c1.39-.17 2.74-.71 3.9-1.61l-1.44-1.44c-.75.54-1.59.89-2.46 1.03zm3.89-2.42l1.42 1.41c.9-1.16 1.45-2.5 1.62-3.89h-2.02c-.14.87-.48 1.72-1.02 2.48z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pane">
+                    <div class="pane-header">Transcription</div>
+                    
+                    <div class="editor-toolbar">
+                        <div class="tool-group">
+                            <button class="tool-btn active" title="Bold"><b>B</b></button>
+                            <button class="tool-btn" title="Italic"><i>I</i></button>
+                            <button class="tool-btn" title="Strikethrough" style="text-decoration: line-through;">S</button>
+                            <button class="tool-btn" title="Subscript">X<sub>2</sub></button>
+                            <button class="tool-btn" title="Superscript">X<sup>2</sup></button>
+                        </div>
+                        <div class="tool-group">
+                            <button class="tool-btn" title="Insert Link">🔗</button>
+                            <button class="tool-btn" title="Insert Image">🖼️</button>
+                            <button class="tool-btn" title="Reference">&lt;ref&gt;</button>
+                        </div>
+                        <div class="tool-group">
+                            <div class="tool-dropdown">
+                                <button class="tool-dropdown-btn" onclick="toggleDropdown('struct-menu')">Structure ▾</button>
+                                <div class="tool-dropdown-menu" id="struct-menu">
+                                    <div class="dropdown-item" onclick="insertSyntax('{{rh|||}}')"><span>{{rh}}</span></div>
+                                    <div class="dropdown-item" onclick="insertSyntax('{{block center|}}')"><span>{{block center}}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-left:auto;">
+                            <button class="btn-ocr" onclick="triggerOCR()">
+                                <svg width="14" height="14" viewBox="0 0 24 24"><path d="M3 5v4h2V5h4V3H5c-1.1 0-2 .9-2 2zm2 10H3v4c0 1.1.9 2 2 2h4v-2H5v-4zm14 4h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zm0-16h-4v2h4v4h2V5c0-1.1-.9-2-2-2zM7 7h10v10H7z"/></svg>
+                                OCR
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="editor-container">
+                        
+                        <div class="editor-section header-section" style="height: 70px;">
+                            <span class="section-label">Header</span>
+                            <div class="highlight-container">
+                                <div class="line-numbers">1</div>
+                                <div class="highlight-layer" id="header-highlight"></div>
+                                <textarea class="editor-textarea" id="header-editor" spellcheck="false" oninput="updateHighlight('header')" onscroll="syncScroll('header')">{{rh||আধুনিক রবিনহুড|}}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="editor-section body-section">
+                            <span class="section-label">Body</span>
+                            <div class="highlight-container">
+                                <div class="line-numbers" id="body-line-numbers">1<br>2<br>3<br>4<br>5</div>
+                                <div class="highlight-layer" id="body-highlight"></div>
+                                <textarea class="editor-textarea" id="body-editor" spellcheck="false" oninput="updateHighlight('body')" onscroll="syncScroll('body')">তাঁর আসল নাম হরেগা রবিনহুড। সে অস্ত্রের লোক এবং তাঁর কার্যক্ষেত্র লন্ডন।<ref>লেখক</ref>
+
+তরুণ বয়সে তাঁর পরিবার ছেড়ে। সে শিক্ষিত ও শিক্ষাদীক্ষায় হিন্দুয়ার। কিন্তু তার মাথা খাটানো আর শারীরিক শক্তির জোরে যে কোনো [[বাধা]] বিপত্তি অতিক্রম করে ফেলতে পারে।</textarea>
+                            </div>
+                        </div>
+
+                        <div class="editor-section footer-section" style="height: 70px;">
+                            <span class="section-label">Footer</span>
+                            <div class="highlight-container">
+                                <div class="line-numbers">1</div>
+                                <div class="highlight-layer" id="footer-highlight"></div>
+                                <textarea class="editor-textarea" id="footer-editor" spellcheck="false" oninput="updateHighlight('footer')" onscroll="syncScroll('footer')">{{smaller|১০}}</textarea>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="bottom-action-bar normal-action-bar">
+                        <div class="saved-status">
+                            <div class="saved-status-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+                            <div class="saved-status-text">All changes saved<span>Your latest edits are stored.</span></div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-secondary" onclick="switchStep(2)">Simulate Expert Login →</button>
+                        </div>
+                    </div>
+
+                    <div class="approve-bar">
+                        <div style="display:flex; align-items:center; gap:8px; color:var(--color-val); font-weight:600;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            You are viewing as an Expert Validator. Is the proofreading perfect?
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-secondary" onclick="switchStep(1)">← Send back to Proofreader</button>
+                            <button class="btn-success" onclick="switchStep(3)">Approve & Validate</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR WITH COLLAPSIBLE ACCORDIONS -->
+        <div class="sidebar">
+            <div class="sidebar-main-header">
+                Tools
+                <span class="hide-badge">hide</span>
+            </div>
+            
+            <!-- Actions Accordion -->
+            <div class="accordion-item closed">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    Actions
+                    <svg width="12" height="12" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                </div>
+                <div class="accordion-content">
+                    <a class="sidebar-link bn">সরানো</a>
+                    <a class="sidebar-link bn">শোধন</a>
+                    <a class="sidebar-link bn">দৃঢ় শোধন</a>
+                    <a class="sidebar-link bn">শূন্য সম্পাদনা</a>
+                </div>
+            </div>
+
+            <!-- General Accordion -->
+            <div class="accordion-item closed">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    General
+                    <svg width="12" height="12" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                </div>
+                <div class="accordion-content">
+                    <a class="sidebar-link">What links here</a>
+                    <a class="sidebar-link">Related changes</a>
+                    <a class="sidebar-link">Upload file</a>
+                    <a class="sidebar-link">Page information</a>
+                    <a class="sidebar-link">Get shortened URL</a>
+                    <a class="sidebar-link bn">তালিকা হালনাগাদ</a>
+                    <a class="sidebar-link bn">ক্রপটুল</a>        
+                </div>
+            </div>
+
+            <!-- Template Script Accordion -->
+            <div class="accordion-item closed">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    Template script
+                    <svg width="12" height="12" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                </div>
+                <div class="accordion-content">
+                    <a class="sidebar-link">Regex সম্পাদক</a>
+                    <a class="sidebar-link bn">পরিষ্কার করুন</a>
+                    <a class="sidebar-link">((nop))</a>
+                </div>
+            </div>
+
+            <!-- Appearance Header -->
+            <div class="sidebar-main-header" style="border-top: 1px solid var(--border-main);">
+                Appearance
+                <span class="hide-badge">hide</span>
+            </div>
+
+            <div class="appearance-group">
+                
+                <span class="appearance-label">Text Size</span>
+                <div class="slider-container">
+                    <span style="font-size: 10px;">A</span>
+                    <input type="range" min="14" max="28" value="19" id="text-slider" oninput="changeTextSize(this.value)">
+                    <span style="font-size: 16px;">A</span>
+                </div>
+
+                <span class="appearance-label" style="margin-top: 16px;">Width</span>
+                <div class="segmented-control">
+                    <input type="radio" id="width-std" name="width" value="standard" onchange="changeWidth('standard')">
+                    <label for="width-std">Standard</label>
+                    <input type="radio" id="width-wide" name="width" value="wide" checked onchange="changeWidth('wide')">
+                    <label for="width-wide">Wide</label>
+                </div>
+
+                <div class="toggle-row" style="margin-top: 20px;">
+                    <span class="appearance-label" style="margin-bottom: 0;">Dark Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="dark-mode-toggle" onchange="toggleTheme()">
+                        <span class="slider-switch"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="save-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                Save your changes
+                <button class="icon-btn" onclick="closeSaveModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <label>Edit Summary (required)</label>
+                <input type="text" id="edit-summary" placeholder="Briefly describe your changes (e.g., 'Fixed typos', 'Added running header')" autofocus>
+                <div class="toggle-row">
+                    <span class="toggle-label">This is a minor edit</span>
+                    <label class="switch"><input type="checkbox"><span class="slider-switch"></span></label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeSaveModal()">Cancel</button>
+                <button class="btn-primary" onclick="confirmSave()">Save changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Accordion Logic ---
+        function toggleAccordion(header) {
+            const item = header.parentElement;
+            item.classList.toggle('closed');
+        }
+
+        // --- Appearance Controls ---
+        function changeTextSize(size) {
+            document.documentElement.style.setProperty('--editor-font-size', size + 'px');
+        }
+
+        function changeWidth(width) {
+            if (width === 'standard') {
+                document.documentElement.style.setProperty('--workspace-max-width', '1200px');
+            } else {
+                document.documentElement.style.setProperty('--workspace-max-width', '100%');
+            }
+        }
+
+        // --- EXISTING LOGIC ---
+        function triggerOCR() {
+            const btn = document.querySelector('.btn-ocr');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Scanning...';
+            btn.style.opacity = '0.5';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.opacity = '1';
+                const editor = document.getElementById('body-editor');
+                editor.value += "\n\n[OCR Inserted Text]: রবিনহুড ছিলেন একজন দক্ষ তীরন্দাজ।";
+                updateHighlight('body');
+            }, 1500);
+        }
+
+        function updateHighlight(section) {
+            const editor = document.getElementById(section + '-editor');
+            const highlightLayer = document.getElementById(section + '-highlight');
+            let text = editor.value;
+
+            text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            text = text.replace(/(\{\{.*?\}\})/g, '<span class="syntax-template">$1</span>');
+            text = text.replace(/(\[\[.*?\]\])/g, '<span class="syntax-link">$1</span>');
+            text = text.replace(/(&lt;.*?&gt;)/g, '<span class="syntax-tag">$1</span>');
+
+            highlightLayer.innerHTML = `<span class="syntax-text">${text}</span>`;
+
+            if(section === 'body') {
+                const lines = editor.value.split('\n').length;
+                let html = '';
+                for (let i = 1; i <= lines; i++) { html += i + '<br>'; }
+                document.getElementById('body-line-numbers').innerHTML = html;
+            }
+        }
+
+        function syncScroll(section) {
+            const editor = document.getElementById(section + '-editor');
+            const highlightLayer = document.getElementById(section + '-highlight');
+            highlightLayer.scrollTop = editor.scrollTop;
+            highlightLayer.scrollLeft = editor.scrollLeft;
+            
+            if(section === 'body') {
+                const lineNumbers = document.getElementById('body-line-numbers');
+                lineNumbers.scrollTop = editor.scrollTop;
+            }
+        }
+
+        updateHighlight('header');
+        updateHighlight('body');
+        updateHighlight('footer');
+
+        function setStatus(statusType) {
+            const badge = document.getElementById('main-status-badge');
+            const statusText = document.getElementById('status-text');
+            
+            badge.style.backgroundColor = '';
+            badge.style.borderColor = '';
+
+            if (statusType === 'np') {
+                badge.style.backgroundColor = 'var(--color-np-bg)';
+                badge.style.borderColor = 'var(--color-np)';
+                statusText.innerHTML = '<span class="dot dot-np"></span> <span style="color:var(--color-np)">Not Proofread</span>';
+            } 
+            else if (statusType === 'prob') {
+                badge.style.backgroundColor = 'var(--color-prob-bg)';
+                badge.style.borderColor = 'var(--color-prob)';
+                statusText.innerHTML = '<span class="dot dot-prob"></span> <span style="color:var(--color-prob)">Problematic</span>';
+            }
+            else if (statusType === 'proof') {
+                badge.style.backgroundColor = 'var(--color-proof-bg)';
+                badge.style.borderColor = 'var(--color-proof)';
+                statusText.innerHTML = '<span class="dot dot-proof"></span> <span style="color:var(--color-proof)">Proofread</span>';
+            }
+            else if (statusType === 'val') {
+                badge.style.backgroundColor = 'var(--color-val-bg)';
+                badge.style.borderColor = 'var(--color-val)';
+                statusText.innerHTML = '<span class="dot dot-val"></span> <span style="color:var(--color-val)">Validated</span>';
+            }
+            
+            toggleDropdown('status-menu');
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const toggle = document.getElementById('dark-mode-toggle');
+            body.setAttribute('data-theme', toggle.checked ? 'dark' : 'light');
+        }
+
+        function toggleDropdown(id) {
+            const dropdowns = document.querySelectorAll('.dropdown-menu, .tool-dropdown-menu, .user-dropdown');
+            dropdowns.forEach(d => { if (d.id !== id) d.classList.remove('active'); });
+            document.getElementById(id).classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.book-selector') && 
+                !event.target.closest('.pagination-group') && 
+                !event.target.closest('.quick-actions') &&
+                !event.target.closest('.user-menu-container') &&
+                !event.target.closest('.tool-dropdown')) {
+                document.querySelectorAll('.dropdown-menu, .tool-dropdown-menu, .user-dropdown').forEach(d => d.classList.remove('active'));
+            }
+        });
+
+        let currentPage = 90;
+        const totalPages = 240;
+
+        function changePage(offset) {
+            let newPage = currentPage + offset;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                updatePageDisplay();
+            }
+        }
+
+        function jumpToPage() {
+            const inputVal = parseInt(document.getElementById('page-input').value);
+            if (inputVal >= 1 && inputVal <= totalPages) {
+                currentPage = inputVal;
+                updatePageDisplay();
+                toggleDropdown('page-menu');
+            } else {
+                alert("Please enter a valid page number.");
+            }
+        }
+
+        function updatePageDisplay() {
+            document.getElementById('current-page-display').innerText = `Page ${currentPage}/${totalPages}`;
+            document.getElementById('page-input').value = currentPage;
+        }
+
+        function replaceText(find, replace) {
+            const editor = document.getElementById('body-editor');
+            editor.value = editor.value.replace(find, replace);
+            updateHighlight('body');
+        }
+        
+        function insertSyntax(text) {
+            const editor = document.getElementById('body-editor');
+            const pos = editor.selectionStart;
+            editor.value = editor.value.slice(0, pos) + text + editor.value.slice(pos);
+            updateHighlight('body');
+            toggleDropdown('struct-menu');
+        }
+
+        function openSaveModal() {
+            document.getElementById('save-modal').classList.add('active');
+            document.getElementById('edit-summary').focus();
+        }
+        function closeSaveModal() {
+            document.getElementById('save-modal').classList.remove('active');
+        }
+        function confirmSave() {
+            const summary = document.getElementById('edit-summary').value;
+            if (!summary) {
+                alert("Please enter an edit summary.");
+                return;
+            }
+            closeSaveModal();
+            document.querySelector('.saved-status-text').innerHTML = `Saved just now<span>${summary}</span>`;
+            switchStep(1);
+        }
+
+        function switchStep(step) {
+            document.querySelectorAll('.step').forEach((el, index) => {
+                if (index + 1 === step) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+
+            const body = document.body;
+
+            if (step === 1) {
+                body.classList.remove('verify-mode');
+                setStatus('proof');
+            } else if (step === 2) {
+                body.classList.add('verify-mode');
+                setStatus('proof'); 
+            } else if (step === 3) {
+                body.classList.remove('verify-mode');
+                setStatus('val'); 
+            }
+        }
+    </script>
+</body>
+</html>
