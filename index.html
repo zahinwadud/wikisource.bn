@@ -376,6 +376,11 @@
             .pane { flex: none; height: 600px; }
             .body-section { min-height: 300px; }
         }
+            .scan-viewport { align-items: safe center; justify-content: safe center; }
+        .saved-status.dirty { color: var(--color-np); }
+        .saved-status.dirty .saved-status-icon { background: var(--color-np-bg); }
+        #quick-summary { width: 240px; padding: 8px 12px; border: 1px solid var(--border-main); border-radius: var(--radius-md); background: var(--surface-white); color: var(--text-dark); font-size: 13px; }
+        #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text-dark); color: var(--surface-white); padding: 8px 16px; border-radius: var(--radius-md); display: none; z-index: 3000; font-size: 13px; }
     </style>
 </head>
 <body data-theme="light" class="proofread-mode">
@@ -400,12 +405,12 @@
         </div>
 
         <div class="pagination-group">
-            <button class="nav-arrow" onclick="changePage(-1)">◀</button>
+            <button class="nav-arrow" aria-label="Previous page" onclick="changePage(-1)">◀</button>
             <button class="page-jump-btn" onclick="toggleDropdown('page-menu')">
                 <span id="current-page-display">Page 90/240</span> 
                 <span style="font-size:10px; color:var(--text-muted);">▼</span>
             </button>
-            <button class="nav-arrow" onclick="changePage(1)">▶</button>
+            <button class="nav-arrow" aria-label="Next page" onclick="changePage(1)">▶</button>
             
             <div class="dropdown-menu" id="page-menu" style="left: 50%; transform: translateX(-50%); width: 200px;">
                 <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px; font-weight:600;">JUMP TO PAGE</div>
@@ -472,13 +477,13 @@
                     <div class="dropdown-menu" id="status-menu">
                         <div style="font-size:11px; color:var(--text-muted); padding: 4px 12px 8px; font-weight:600;">SET PAGE STATUS</div>
                         
-                        <div class="dropdown-item" onclick="setStatus('np')">
+                        <div class="dropdown-item" onclick="pickStatus('np')">
                             <span><span class="dot dot-np"></span> Not Proofread</span>
                         </div>
-                        <div class="dropdown-item" onclick="setStatus('prob')">
+                        <div class="dropdown-item" onclick="pickStatus('prob')">
                             <span><span class="dot dot-prob"></span> Problematic</span>
                         </div>
-                        <div class="dropdown-item" onclick="setStatus('proof')">
+                        <div class="dropdown-item" onclick="pickStatus('proof')">
                             <span><span class="dot dot-proof"></span> Proofread</span>
                         </div>
                         
@@ -498,19 +503,19 @@
                 <div class="pane">
                     <div class="pane-header">Original scan</div>
                     <div class="scan-viewport">
-                        <img class="actual-scan-image" src="Page90.jpg" alt="Page 90 Scan" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'color:red; text-align:center;\'>⚠️ Image not found.<br>Ensure Page90.jpg is in this folder.</div>';">
+                        <img class="actual-scan-image" src="Page90.jpg" alt="Page 90 Scan" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<div style=&quot;color:#c00;text-align:center&quot;>⚠️ Image not found.<br>Ensure Page90.jpg is in this folder.</div>')">
                         
                         <div class="scan-controls">
-                            <button class="scan-btn" title="Zoom In">
+                            <button class="scan-btn" title="Zoom In" aria-label="Zoom in" onclick="scanZoom(.25)">
                                 <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                             </button>
-                            <button class="scan-btn" title="Zoom Out">
+                            <button class="scan-btn" title="Zoom Out" aria-label="Zoom out" onclick="scanZoom(-.25)">
                                 <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
                             </button>
-                            <button class="scan-btn" title="Fit to Screen">
+                            <button class="scan-btn" title="Fit to Screen" aria-label="Fit to screen" onclick="scanFit()">
                                 <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
                             </button>
-                            <button class="scan-btn" title="Rotate">
+                            <button class="scan-btn" title="Rotate" aria-label="Rotate" onclick="scanRotate()">
                                 <svg viewBox="0 0 24 24"><path d="M15.55 5.55L11 1v3.07C7.06 4.56 4 7.92 4 12s3.05 7.44 7 7.93v-2.02c-2.84-.48-5-2.94-5-5.91s2.16-5.43 5-5.91V10l4.55-4.45zM19.93 11c-.17-1.39-.72-2.73-1.62-3.89l-1.42 1.42c.54.75.88 1.6 1.02 2.47h2.02zM13 17.9v2.02c1.39-.17 2.74-.71 3.9-1.61l-1.44-1.44c-.75.54-1.59.89-2.46 1.03zm3.89-2.42l1.42 1.41c.9-1.16 1.45-2.5 1.62-3.89h-2.02c-.14.87-.48 1.72-1.02 2.48z"/></svg>
                             </button>
                         </div>
@@ -543,6 +548,7 @@
                             </div>
                         </div>
                         
+                        <div class="tool-group"><button class="tool-btn" title="ZWNJ" aria-label="Insert ZWNJ" onclick="insertChar('\u200c')">ZWNJ</button><button class="tool-btn" title="ZWJ" aria-label="Insert ZWJ" onclick="insertChar('\u200d')">ZWJ</button><button class="tool-btn" title="Right single quote" aria-label="Insert Right single quote" onclick="insertChar('’')">’</button><button class="tool-btn" title="Left single quote" aria-label="Insert Left single quote" onclick="insertChar('‘')">‘</button><button class="tool-btn" title="Left double quote" aria-label="Insert Left double quote" onclick="insertChar('“')">“</button><button class="tool-btn" title="Right double quote" aria-label="Insert Right double quote" onclick="insertChar('”')">”</button></div>
                         <div style="margin-left:auto;">
                             <button class="btn-ocr" onclick="triggerOCR()">
                                 <svg width="14" height="14" viewBox="0 0 24 24"><path d="M3 5v4h2V5h4V3H5c-1.1 0-2 .9-2 2zm2 10H3v4c0 1.1.9 2 2 2h4v-2H5v-4zm14 4h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zm0-16h-4v2h4v4h2V5c0-1.1-.9-2-2-2zM7 7h10v10H7z"/></svg>
@@ -558,7 +564,7 @@
                             <div class="highlight-container">
                                 <div class="line-numbers">1</div>
                                 <div class="highlight-layer" id="header-highlight"></div>
-                                <textarea class="editor-textarea" id="header-editor" spellcheck="false" oninput="updateHighlight('header')" onscroll="syncScroll('header')">{{rh||আধুনিক রবিনহুড|}}</textarea>
+                                <textarea class="editor-textarea" id="header-editor" spellcheck="false" lang="bn" oninput="updateHighlight('header')" onscroll="syncScroll('header')">{{rh||আধুনিক রবিনহুড|}}</textarea>
                             </div>
                         </div>
 
@@ -567,7 +573,7 @@
                             <div class="highlight-container">
                                 <div class="line-numbers" id="body-line-numbers">1<br>2<br>3<br>4<br>5</div>
                                 <div class="highlight-layer" id="body-highlight"></div>
-                                <textarea class="editor-textarea" id="body-editor" spellcheck="false" oninput="updateHighlight('body')" onscroll="syncScroll('body')">{{gap}}তার আসল নাম হুগো ব্রিট্‌উইজার। সে অষ্ট্রিয়ার লোক এবং তার কার্য্যক্ষেত্র ভিয়েনা সহরে।
+                                <textarea class="editor-textarea" id="body-editor" spellcheck="false" lang="bn" oninput="updateHighlight('body')" onscroll="syncScroll('body')">{{gap}}তার আসল নাম হুগো ব্রিট্‌উইজার। সে অষ্ট্রিয়ার লোক এবং তার কার্য্যক্ষেত্র ভিয়েনা সহরে।
 {{gap}}হুগো রীতিমত ভদ্র পরিবারের ছেলে। সে শিক্ষিত ও ইঞ্জিনিয়ার। কিন্তু তার মাথা এত সাফ্ যে, নিজের যত্নে ও অধ্যবসায়ে সে আরো নানান্ বিদ্যায় পাকা হয়ে উঠেছিল।
 {{gap}}তালা-চাবি, সিন্দুক, বাক্স ও গরাদে প্রভৃতি তৈরি করবার জন্যে যে-সব লোহা ও অন্যান্য ধাতু ব্যবহৃত হ’ত, তাদের শক্তির খুঁটিনাটি সমস্তই সে জানত। লোহা ও ইস্পাতের উপরে কোন্ অ্যাসিডের কতটা প্রভাব, রসায়ন-বিদ্যা শিখে তাও সে জেনে নিয়েছিল। অক্সি অ্যাসিটিলিন টর্চ্চ দিয়ে কেমন ক’রে ইস্পাতের দরজায় ছ্যাদা করতে হয়, তাও তার অজানা ছিল না।
 </textarea>
@@ -579,7 +585,7 @@
                             <div class="highlight-container">
                                 <div class="line-numbers">1</div>
                                 <div class="highlight-layer" id="footer-highlight"></div>
-                                <textarea class="editor-textarea" id="footer-editor" spellcheck="false" oninput="updateHighlight('footer')" onscroll="syncScroll('footer')">{{smaller|১০}}</textarea>
+                                <textarea class="editor-textarea" id="footer-editor" spellcheck="false" lang="bn" oninput="updateHighlight('footer')" onscroll="syncScroll('footer')">{{smaller|১০}}</textarea>
                             </div>
                         </div>
 
@@ -588,9 +594,12 @@
                     <div class="bottom-action-bar normal-action-bar">
                         <div class="saved-status">
                             <div class="saved-status-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
-                            <div class="saved-status-text">All changes saved<span>Your latest edits are stored.</span></div>
+                            <div class="saved-status-text">No changes yet<span>Edit the page to begin.</span></div>
                         </div>
                         <div style="display:flex; gap:8px;">
+                            <input id="quick-summary" type="text" placeholder="Edit summary (optional)" aria-label="Edit summary">
+                            <button class="btn-secondary" onclick="quickSave(false)">Save</button>
+                            <button class="btn-primary" style="padding:8px 16px" title="Ctrl+Enter" onclick="quickSave(true)">Save &amp; next</button>
                             <button class="btn-secondary" onclick="switchStep(2)">Simulate Expert Login →</button>
                         </div>
                     </div>
@@ -815,7 +824,7 @@
                 statusText.innerHTML = '<span class="dot dot-val"></span> <span style="color:var(--color-val)">Validated</span>';
             }
             
-            toggleDropdown('status-menu');
+            
         }
 
         function toggleTheme() {
@@ -889,35 +898,98 @@
             document.getElementById('save-modal').classList.remove('active');
         }
         function confirmSave() {
-            const summary = document.getElementById('edit-summary').value;
-            if (!summary) {
-                alert("Please enter an edit summary.");
-                return;
-            }
-            closeSaveModal();
-            document.querySelector('.saved-status-text').innerHTML = `Saved just now<span>${summary}</span>`;
-            switchStep(1);
+            const f = document.getElementById('edit-summary'), v = f.value.trim();
+            if (!v) { f.focus(); toast('Please enter an edit summary.'); return; }
+            closeSaveModal(); doSave(v, false); f.value = '';
         }
 
         function switchStep(step) {
-            document.querySelectorAll('.step').forEach((el, index) => {
-                if (index + 1 === step) el.classList.add('active');
-                else el.classList.remove('active');
-            });
-
-            const body = document.body;
-
-            if (step === 1) {
-                body.classList.remove('verify-mode');
-                setStatus('proof');
-            } else if (step === 2) {
-                body.classList.add('verify-mode');
-                setStatus('proof'); 
-            } else if (step === 3) {
-                body.classList.remove('verify-mode');
-                setStatus('val'); 
+            const b = document.body;
+            if (step === 3) {
+                if (!b.classList.contains('verify-mode')) { toast('Only a different user (expert) can validate this page.'); return; }
+                if (snap() !== savedSnap) { toast('Save the proofreader\'s changes before validating.'); return; }
             }
+            document.querySelectorAll('.step').forEach((el, i) => el.classList.toggle('active', i + 1 === step));
+            b.classList.toggle('verify-mode', step === 2);
+            if (step === 3) setStatus('val');
         }
+        function pickStatus(t) { setStatus(t); toggleDropdown('status-menu'); }
+
+        // ---- toast, dirty tracking, drafts, save ----
+        let tt;
+        function toast(t) {
+            let e = document.getElementById('toast');
+            if (!e) { e = document.createElement('div'); e.id = 'toast'; e.setAttribute('role', 'status'); document.body.appendChild(e); }
+            e.textContent = t; e.style.display = 'block'; clearTimeout(tt); tt = setTimeout(() => e.style.display = 'none', 2500);
+        }
+        const EDS = ['header', 'body', 'footer'], DK = () => 'ws-draft-' + currentPage;
+        const snap = () => JSON.stringify(EDS.map(x => document.getElementById(x + '-editor').value));
+        let savedSnap = snap();
+        function setSavedText(a, b) {
+            const e = document.querySelector('.saved-status-text'); e.textContent = a;
+            const sp = document.createElement('span'); sp.textContent = b; e.appendChild(sp);
+        }
+        function onEdited() {
+            const d = snap() !== savedSnap;
+            document.querySelector('.saved-status').classList.toggle('dirty', d);
+            setSavedText(d ? 'Unsaved changes' : 'All changes saved', d ? 'A draft is kept in this browser.' : '');
+            try { d ? localStorage.setItem(DK(), snap()) : localStorage.removeItem(DK()); } catch (e) {}
+        }
+        const _uh = updateHighlight;
+        updateHighlight = function (x) { _uh(x); onEdited(); };
+        function doSave(summary, next) {   // TODO: replace body with MediaWiki action=edit
+            savedSnap = snap();
+            try { localStorage.removeItem(DK()); } catch (e) {}
+            document.querySelector('.saved-status').classList.remove('dirty');
+            setSavedText('Saved just now', summary); toast('Saved page ' + currentPage);
+            if (next) changePage(1);
+        }
+        function quickSave(next) {
+            if (document.body.classList.contains('verify-mode')) return;
+            if (snap() === savedSnap) { next ? changePage(1) : toast('Nothing to save.'); return; }
+            const v = document.getElementById('quick-summary');
+            doSave(v.value.trim() || 'Proofread corrections', next); v.value = '';
+        }
+        try {   // restore an unsaved draft
+            const d = JSON.parse(localStorage.getItem(DK()));
+            if (d && JSON.stringify(d) !== savedSnap) {
+                EDS.forEach((x, i) => { document.getElementById(x + '-editor').value = d[i]; _uh(x); });
+                onEdited(); toast('Restored your unsaved draft');
+            }
+        } catch (e) {}
+
+        // ---- scan viewer ----
+        let sz = 1, sr = 0;
+        const scanImg = () => document.querySelector('.actual-scan-image');
+        function scanApply() {
+            const i = scanImg(); if (!i) return;
+            if (sz === 1) { i.style.maxWidth = ''; i.style.maxHeight = ''; i.style.width = ''; }
+            else { i.style.maxWidth = 'none'; i.style.maxHeight = 'none'; i.style.width = (i.dataset.base * sz) + 'px'; }
+            i.style.transform = sr ? 'rotate(' + sr + 'deg)' : '';
+        }
+        function scanZoom(d) {
+            const i = scanImg(); if (!i) return;
+            if (!i.dataset.base) i.dataset.base = i.offsetWidth;
+            sz = Math.min(4, Math.max(1, sz + d)); scanApply();
+        }
+        function scanFit() { sz = 1; sr = 0; scanApply(); }
+        function scanRotate() { sr = (sr + 90) % 360; scanApply(); }
+
+        // ---- character palette + shortcuts ----
+        let lastEd = null;
+        document.addEventListener('focusin', e => { if (e.target.classList && e.target.classList.contains('editor-textarea')) lastEd = e.target; });
+        function insertChar(t) {
+            const e = lastEd || document.getElementById('body-editor'), p = e.selectionStart;
+            e.setRangeText(t, p, e.selectionEnd, 'end'); e.focus(); updateHighlight(e.id.replace('-editor', ''));
+        }
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); quickSave(true); }
+            else if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); changePage(1); }
+            else if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); changePage(-1); }
+            else if (e.key === 'Escape') { closeSaveModal(); document.querySelectorAll('.dropdown-menu, .tool-dropdown-menu, .user-dropdown').forEach(d => d.classList.remove('active')); }
+            else if (e.key === 'Enter' && e.target.id === 'edit-summary') confirmSave();
+        });
+        addEventListener('beforeunload', e => { if (snap() !== savedSnap) { e.preventDefault(); e.returnValue = ''; } });
     </script>
 </body>
 </html>
